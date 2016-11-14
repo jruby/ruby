@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'win32/importer'
+require 'Win32API'
 
 module Win32
 
@@ -168,11 +169,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Error
     #
     class Error < ::StandardError
-      module Kernel32
-        extend Importer
-        dlload "kernel32.dll"
-      end
-      FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
+      FormatMessageW = Win32API.new('kernel32.dll', 'FormatMessageW', 'LPLLPLP', 'L')
       def initialize(code)
         @code = code
         buff = WCHAR_NUL * 1024
@@ -216,7 +213,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
       # Make all
       Constants.constants.grep(/^HKEY_/) do |c|
-        Registry.const_set c, new(Constants.const_get(c), c.to_s)
+        Registry.const_set c, new(Constants.const_get(c), c)
       end
     end
 
@@ -225,23 +222,26 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     module API
       include Constants
-      extend Importer
-      dlload "advapi32.dll"
       [
-        "long RegOpenKeyExW(void *, void *, long, long, void *)",
-        "long RegCreateKeyExW(void *, void *, long, long, long, long, void *, void *, void *)",
-        "long RegEnumValueW(void *, long, void *, void *, void *, void *, void *, void *)",
-        "long RegEnumKeyExW(void *, long, void *, void *, void *, void *, void *, void *)",
-        "long RegQueryValueExW(void *, void *, void *, void *, void *, void *)",
-        "long RegSetValueExW(void *, void *, long, long, void *, long)",
-        "long RegDeleteValueW(void *, void *)",
-        "long RegDeleteKeyW(void *, void *)",
-        "long RegFlushKey(void *)",
-        "long RegCloseKey(void *)",
-        "long RegQueryInfoKey(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
+        %w/RegOpenKeyExA    LPLLP        L/,
+        %w/RegCreateKeyExA  LPLLLLPPP    L/,
+        %w/RegEnumValueA    LLPPPPPP     L/,
+        %w/RegEnumKeyExA    LLPPLLLP     L/,
+        %w/RegQueryValueExA LPLPPP       L/,
+        %w/RegSetValueExA   LPLLPL       L/,
+        %w/RegOpenKeyExW    LPLLP        L/,
+        %w/RegCreateKeyExW  LPLLLLPPP    L/,
+        %w/RegEnumValueW    LLPPPPPP     L/,
+        %w/RegEnumKeyExW    LLPPLLLP     L/,
+        %w/RegQueryValueExW LPLPPP       L/,
+        %w/RegSetValueExW   LPLLPL       L/,
+        %w/RegDeleteValue   LP           L/,
+        %w/RegDeleteKey     LP           L/,
+        %w/RegFlushKey      L            L/,
+        %w/RegCloseKey      L            L/,
+        %w/RegQueryInfoKey  LPPPPPPPPPPP L/,
       ].each do |fn|
-        cfunc = extern fn, :stdcall
-        const_set cfunc.name.intern, cfunc
+        const_set fn[0].intern, Win32API.new('advapi32.dll', *fn)
       end
 
       module_function
@@ -281,7 +281,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def make_wstr(str)
-        str.encode(WCHAR)
+        str.encode(WCHAR) + 0.chr.encode(WCHAR)
       end
 
       def OpenKey(hkey, name, opt, desired)
