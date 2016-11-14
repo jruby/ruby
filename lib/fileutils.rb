@@ -527,7 +527,7 @@ module FileUtils
         end
         begin
           File.rename s, d
-        rescue Errno::EXDEV
+        rescue *MV_RESCUES
           copy_entry s, d, true
           if secure
             remove_entry_secure s, force
@@ -541,6 +541,15 @@ module FileUtils
     end
   end
   module_function :mv
+
+  # JRuby raises EACCES because JDK reports errors differently
+  MV_RESCUES = begin
+    if RUBY_ENGINE == 'jruby'
+      [Errno::EXDEV, Errno::EACCES]
+    else
+      [Errno::EXDEV]
+    end
+  end
 
   alias move mv
   module_function :move
