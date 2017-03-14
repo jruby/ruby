@@ -3,6 +3,7 @@
 require 'socket'
 require 'timeout'
 require 'io/wait'
+require 'ipaddr'
 
 begin
   require 'securerandom'
@@ -764,14 +765,14 @@ class Resolv
         def recv_reply(readable_socks)
           lazy_initialize
           reply, from = readable_socks[0].recvfrom(UDPSize)
-          return reply, [from[3],from[1]]
+          return reply, [IPAddr.new(from[3]),from[1]]
         end
 
         def sender(msg, data, host, port=Port)
           lazy_initialize
           sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return nil if !sock
-          service = [host, port]
+          service = [IPAddr.new(host), port]
           id = DNS.allocate_request_id(host, port)
           request = msg.encode
           request[0,2] = [id].pack('n')
