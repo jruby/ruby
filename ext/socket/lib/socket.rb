@@ -271,6 +271,9 @@ class BasicSocket < IO
     addr
   end
 
+  # JRuby does not do this dance to get around keyword arguments.
+  unless RUBY_ENGINE == 'jruby'
+
   # call-seq:
   #    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
   #
@@ -466,6 +469,9 @@ class Socket < BasicSocket
     end
   end
 
+  # JRuby does not do this dance to get around keyword arguments.
+  unless RUBY_ENGINE == 'jruby'
+
   # call-seq:
   #   socket.recvfrom_nonblock(maxlen[, flags[, outbuf[, opts]]]) => [mesg, sender_addrinfo]
   #
@@ -592,6 +598,8 @@ class Socket < BasicSocket
   #def accept_nonblock(exception: true)
   #  __accept_nonblock(exception)
   #end
+
+  end # unless RUBY_ENGINE == 'jruby'
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
