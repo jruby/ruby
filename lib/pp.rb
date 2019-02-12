@@ -514,7 +514,8 @@ class MatchData # :nodoc:
   end
 end
 
-class RubyVM::AbstractSyntaxTree::Node
+# RubyVM not defined outside of MRI
+defined?(RubyVM::AbstractSyntaxTree::Node) && class RubyVM::AbstractSyntaxTree::Node
   def pretty_print_children(q, names = [])
     children.zip(names) do |c, n|
       if n
