@@ -1616,6 +1616,7 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
     return fib->cont.value;
 
 #else /* FIBER_USE_NATIVE */
+    fib->cont.saved_ec.machine.stack_end = NULL;
     if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
 	fib = th->ec->fiber_ptr;
@@ -1930,6 +1931,20 @@ fiber_to_s(VALUE fibval)
     GetProcPtr(fib->first_proc, proc);
     return rb_block_to_s(fibval, &proc->block, status_info);
 }
+
+#ifdef HAVE_WORKING_FORK
+void
+rb_fiber_atfork(rb_thread_t *th)
+{
+    if (th->root_fiber) {
+        if (&th->root_fiber->cont.saved_ec != th->ec) {
+            th->root_fiber = th->ec->fiber_ptr;
+            th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
+        }
+        th->root_fiber->prev = 0;
+    }
+}
+#endif
 
 /*
  *  Document-class: FiberError
