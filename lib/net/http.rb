@@ -973,10 +973,6 @@ module Net   #:nodoc:
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
         D "starting SSL for #{conn_address}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
@@ -984,12 +980,14 @@ module Net   #:nodoc:
         s.hostname = @address if s.respond_to? :hostname=
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
-          s.session = @ssl_session
+          s.session = @ssl_session if @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
+        # OpenSSL::SSL::Session somehow works but SSLSocket#session= does nothing with JRuby-OpenSSL
+        #@ssl_session = s.session
         D "SSL established"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
