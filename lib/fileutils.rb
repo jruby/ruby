@@ -93,6 +93,9 @@ require "fileutils/version"
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
+
+require 'rbconfig'
+
 module FileUtils
 
   def self.private_module_function(name)   #:nodoc:

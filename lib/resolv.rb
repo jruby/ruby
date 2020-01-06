@@ -3,6 +3,7 @@
 require 'socket'
 require 'timeout'
 require 'io/wait'
+require 'ipaddr'
 
 begin
   require 'securerandom'
@@ -36,6 +37,11 @@ end
 # * /etc/nsswitch.conf is not supported.
 
 class Resolv
+  
+  ##
+  # Tests whether we're running on Windows
+  
+  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
 
   ##
   # Looks up the first IP address for +name+.
@@ -166,11 +172,12 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    begin
-      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    if WINDOWS
       require 'win32/resolv'
       DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
     rescue LoadError
+      DefaultFileName = Win32::Resolv.get_hosts_path
+    else
       DefaultFileName = '/etc/hosts'
     end
 
@@ -758,14 +765,14 @@ class Resolv
         def recv_reply(readable_socks)
           lazy_initialize
           reply, from = readable_socks[0].recvfrom(UDPSize)
-          return reply, [from[3],from[1]]
+          return reply, [IPAddr.new(from[3]),from[1]]
         end
 
         def sender(msg, data, host, port=Port)
           lazy_initialize
           sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return nil if !sock
-          service = [host, port]
+          service = [IPAddr.new(host), port]
           id = DNS.allocate_request_id(host, port)
           request = msg.encode
           request[0,2] = [id].pack('n')
@@ -984,7 +991,7 @@ class Resolv
         if File.exist? filename
           config_hash = Config.parse_resolv_conf(filename)
         else
-          if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+          if WINDOWS
             require 'win32/resolv'
             search, nameserver = Win32::Resolv.get_resolv_info
             config_hash = {}

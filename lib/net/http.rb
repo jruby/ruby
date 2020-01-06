@@ -629,6 +629,10 @@ module Net   #:nodoc:
     # is required to use the proxy, and p_no_proxy hosts which do not
     # use the proxy.
     #
+    # In JRuby, this will default to the JSE proxy settings provided in the
+    # 'http.proxyHost' and 'http.proxyPort' Java system properties, if they
+    # are set, falling back on environment variables otherwise.
+    #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
 
@@ -1050,6 +1054,11 @@ module Net   #:nodoc:
     #
     # This class is obsolete.  You may pass these same parameters directly to
     # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
+    #
+    # In JRuby, this will default to the JSE proxy settings provided in the
+    # 'http.proxyHost' and 'http.proxyPort' Java system properties, if they
+    # are set, falling back on environment variables otherwise.
+    #
     def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
       return self unless p_addr
 

@@ -172,6 +172,10 @@ module IRB
           to_ignore = ignored_modules
           ObjectSpace.each_object(Module){|m|
             next if (to_ignore.include?(m) rescue true)
+
+            # JRuby specific (JRUBY-2186)
+            next if RUBY_ENGINE == 'jruby' && !m.respond_to?(:instance_methods)
+
             candidates.concat m.instance_methods(false).collect{|x| x.to_s}
           }
           candidates.sort!
