@@ -528,7 +528,7 @@ EOT
         prepare_syntax_check(code, *args) do |src, fname, line, mesg|
           yield if defined?(yield)
           e = assert_raise(SyntaxError, mesg) do
-            syntax_check(src, fname, line)
+            check_syntax(src, fname, line)
           end
           assert_match(error, e.message, mesg)
           e
