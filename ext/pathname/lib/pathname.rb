@@ -10,7 +10,8 @@
 # For documentation, see class Pathname.
 #
 
-require 'pathname.so'
+# Load built-in pathname library
+JRuby::Util.load_ext("org.jruby.ext.pathname.PathnameLibrary")
 
 class Pathname
 
@@ -29,10 +30,10 @@ class Pathname
 
   if File::ALT_SEPARATOR
     SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
-    SEPARATOR_PAT = /[#{SEPARATOR_LIST}]/
+    SEPARATOR_PAT = /[#{SEPARATOR_LIST}]|.+!\/|[a-z:]+:\/\/?/
   else
     SEPARATOR_LIST = "#{Regexp.quote File::SEPARATOR}"
-    SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}/
+    SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}|.+!\/|[a-z:]+:\/\/?/
   end
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter

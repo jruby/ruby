@@ -7,7 +7,7 @@
 
 require 'fileutils'
 begin
-  require 'etc.so'
+  require 'etc'
 rescue LoadError # rescue LoadError for miniruby
 end
 
@@ -87,9 +87,9 @@ class Dir
   #
   def self.mktmpdir(prefix_suffix=nil, *rest, **options)
     base = nil
-    path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|path, _, _, d|
+    path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|_path, _, _, d|
       base = d
-      mkdir(path, 0700)
+      mkdir(_path, 0700)
     }
     if block_given?
       begin
@@ -140,7 +140,10 @@ class Dir
         t = Time.now.strftime("%Y%m%d")
         path = "#{prefix}#{t}-#{$$}-#{RANDOM.next}"\
                "#{n ? %[-#{n}] : ''}#{suffix||''}"
-        path = File.join(tmpdir, path)
+        # We use the second form here because chdir + ./ files won't open right (http://bugs.jruby.org/3698)
+        # path = File.join(tmpdir, path)
+        path = File.expand_path(path, tmpdir)
+
         yield(path, n, opts, origdir)
       rescue Errno::EEXIST
         n ||= 0

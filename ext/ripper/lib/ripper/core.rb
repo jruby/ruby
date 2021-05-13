@@ -9,7 +9,12 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
-require 'ripper.so'
+if RUBY_ENGINE == 'jruby'
+  # Load built-in ripper library
+  JRuby::Util.load_ext("org.jruby.ext.ripper.RipperLibrary")
+else
+  require 'ripper.so'
+end
 
 class Ripper
 
