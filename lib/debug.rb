@@ -3,7 +3,7 @@
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 # Copyright (C) 2000-2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
-require 'continuation'
+require 'continuation' unless RUBY_ENGINE == 'jruby'
 
 require 'tracer'
 require 'pp'
@@ -375,8 +375,10 @@ class DEBUGGER__
 
     def debug_command(file, line, id, binding)
       MUTEX.lock
-      unless defined?($debugger_restart) and $debugger_restart
-        callcc{|c| $debugger_restart = c}
+      unless RUBY_ENGINE == 'jruby'
+        unless defined?($debugger_restart) and $debugger_restart
+          callcc{|c| $debugger_restart = c}
+        end
       end
       set_last_thread(Thread.current)
       frame_pos = 0
@@ -648,7 +650,11 @@ class DEBUGGER__
             stdout.printf "%s\n", debug_eval($', binding).inspect
 
           when /^\s*r(?:estart)?$/
-            $debugger_restart.call
+            if RUBY_ENGINE == 'jruby'
+              stdout.print "JRuby doesn't support the command restart, since it depends on continuations\n"
+            else
+              $debugger_restart.call
+            end
 
           when /^\s*h(?:elp)?$/
             debug_print_help()
@@ -1099,7 +1105,7 @@ EOHELP
   stdout.printf "Emacs support available.\n\n"
   RubyVM::InstructionSequence.compile_option = {
     trace_instruction: true
-  }
+  } unless RUBY_ENGINE = 'jruby'
   set_trace_func proc { |event, file, line, id, binding, klass, *rest|
     DEBUGGER__.context.trace_func event, file, line, id, binding, klass
   }

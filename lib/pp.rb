@@ -424,7 +424,7 @@ end
 class File < IO # :nodoc:
   class Stat # :nodoc:
     def pretty_print(q) # :nodoc:
-      require 'etc.so'
+      require 'etc'
       q.object_group(self) {
         q.breakable
         q.text sprintf("dev=0x%x", self.dev); q.comma_breakable
@@ -530,7 +530,8 @@ class MatchData # :nodoc:
   end
 end
 
-class RubyVM::AbstractSyntaxTree::Node
+# RubyVM not defined outside of MRI
+defined?(RubyVM::AbstractSyntaxTree::Node) && class RubyVM::AbstractSyntaxTree::Node
   def pretty_print_children(q, names = [])
     children.zip(names) do |c, n|
       if n

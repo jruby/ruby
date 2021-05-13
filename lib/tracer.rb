@@ -144,12 +144,12 @@ class Tracer
   end
 
   def add_filter(p = nil, &b) # :nodoc:
-    p ||= b
+    p ||= proc(&b)
     @filters.push p
   end
 
   def set_get_line_procs(file, p = nil, &b) # :nodoc:
-    p ||= b
+    p ||= proc(&b)
     @get_line_procs[file] = p
   end
 
@@ -252,7 +252,7 @@ class Tracer
   #   })
 
   def Tracer.set_get_line_procs(file_name, p = nil, &b)
-    p ||= b
+    p ||= proc(&b)
     Single.set_get_line_procs(file_name, p)
   end
 
@@ -266,7 +266,7 @@ class Tracer
   #   end
 
   def Tracer.add_filter(p = nil, &b)
-    p ||= b
+    p ||= proc(&b)
     Single.add_filter(p)
   end
 end

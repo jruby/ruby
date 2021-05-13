@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-require 'socket.so'
+# Load built-in socket library
+JRuby::Util.load_ext("org.jruby.ext.socket.SocketLibrary")
+
 require 'io/wait'
 
 class Addrinfo
@@ -194,7 +196,7 @@ class Addrinfo
 
   # creates a listening socket bound to self.
   def listen(backlog=Socket::SOMAXCONN)
-    sock = Socket.new(self.pfamily, self.socktype, self.protocol)
+    sock = ServerSocket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
@@ -300,9 +302,9 @@ class BasicSocket < IO
   #   # use 3-element array.
   #   ancdata = [:SOCKET, :RIGHTS, [io.fileno].pack("i!")]
   #   sock.sendmsg("\0", 0, nil, ancdata)
-  def sendmsg(mesg, flags = 0, dest_sockaddr = nil, *controls)
-    __sendmsg(mesg, flags, dest_sockaddr, controls)
-  end
+  #def sendmsg(mesg, flags = 0, dest_sockaddr = nil, *controls)
+  #  __sendmsg(mesg, flags, dest_sockaddr, controls)
+  #end
 
   # call-seq:
   #    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls, opts={}) => numbytes_sent
@@ -316,10 +318,10 @@ class BasicSocket < IO
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol +:wait_writable+ instead.
-  def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
-                       exception: true)
-    __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
-  end
+  #def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
+  #                     exception: true)
+  #  __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
+  #end
 
   # call-seq:
   # 	basicsocket.recv_nonblock(maxlen [, flags [, buf [, options ]]]) => mesg
@@ -368,9 +370,9 @@ class BasicSocket < IO
   #
   # === See
   # * Socket#recvfrom
-  def recv_nonblock(len, flag = 0, str = nil, exception: true)
-    __recv_nonblock(len, flag, str, exception)
-  end
+  #def recv_nonblock(len, flag = 0, str = nil, exception: true)
+  #  __recv_nonblock(len, flag, str, exception)
+  #end
 
   # call-seq:
   #    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
@@ -423,9 +425,9 @@ class BasicSocket < IO
   #       return ancdata.unix_rights[0]
   #     end
   #   }
-  def recvmsg(dlen = nil, flags = 0, clen = nil, scm_rights: false)
-    __recvmsg(dlen, flags, clen, scm_rights)
-  end
+  #def recvmsg(dlen = nil, flags = 0, clen = nil, scm_rights: false)
+  #  __recvmsg(dlen, flags, clen, scm_rights)
+  #end
 
   # call-seq:
   #    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
@@ -439,23 +441,23 @@ class BasicSocket < IO
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol +:wait_readable+ instead.
-  def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
-                       scm_rights: false, exception: true)
-    __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
-  end
+  #def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
+  #                     scm_rights: false, exception: true)
+  #  __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  #end
 
   # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
   # and IO#write_nonblock using MSG_DONTWAIT
   # Do other platforms support MSG_DONTWAIT reliably?
-  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
-    def read_nonblock(len, str = nil, exception: true) # :nodoc:
-      __read_nonblock(len, str, exception)
-    end
-
-    def write_nonblock(buf, exception: true) # :nodoc:
-      __write_nonblock(buf, exception)
-    end
-  end
+  #if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+  #  def read_nonblock(len, str = nil, exception: true) # :nodoc:
+  #    __read_nonblock(len, str, exception)
+  #  end
+  #
+  #  def write_nonblock(buf, exception: true) # :nodoc:
+  #    __write_nonblock(buf, exception)
+  #  end
+  #end
 end
 
 class Socket < BasicSocket
@@ -465,6 +467,9 @@ class Socket < BasicSocket
       self.setsockopt(:IPV6, :V6ONLY, 1)
     end
   end
+
+  # JRuby does not do this dance to get around keyword arguments.
+  unless RUBY_ENGINE == 'jruby'
 
   # call-seq:
   #   socket.recvfrom_nonblock(maxlen[, flags[, outbuf[, opts]]]) => [mesg, sender_addrinfo]
@@ -532,9 +537,9 @@ class Socket < BasicSocket
   #
   # === See
   # * Socket#recvfrom
-  def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
-    __recvfrom_nonblock(len, flag, str, exception)
-  end
+  #def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
+  #  __recvfrom_nonblock(len, flag, str, exception)
+  #end
 
   # call-seq:
   #   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
@@ -589,9 +594,11 @@ class Socket < BasicSocket
   #
   # === See
   # * Socket#accept
-  def accept_nonblock(exception: true)
-    __accept_nonblock(exception)
-  end
+  #def accept_nonblock(exception: true)
+  #  __accept_nonblock(exception)
+  #end
+
+  end # unless RUBY_ENGINE == 'jruby'
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
@@ -673,7 +680,7 @@ class Socket < BasicSocket
       port = nil
       ai_list.each {|ai|
         begin
-          s = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
+          s = ServerSocket.new(ai.pfamily, ai.socktype, ai.protocol)
         rescue SystemCallError
           next
         end
@@ -1210,9 +1217,9 @@ class Socket < BasicSocket
   #
   # === See
   #  # Socket#connect
-  def connect_nonblock(addr, exception: true)
-    __connect_nonblock(addr, exception)
-  end
+  #def connect_nonblock(addr, exception: true)
+  #  __connect_nonblock(addr, exception)
+  #end
 end
 
 class UDPSocket < IPSocket
@@ -1268,9 +1275,9 @@ class UDPSocket < IPSocket
   #
   # === See
   # * Socket#recvfrom
-  def recvfrom_nonblock(len, flag = 0, outbuf = nil, exception: true)
-    __recvfrom_nonblock(len, flag, outbuf, exception)
-  end
+  #def recvfrom_nonblock(len, flag = 0, outbuf = nil, exception: true)
+  #  __recvfrom_nonblock(len, flag, outbuf, exception)
+  #end
 end
 
 class TCPServer < TCPSocket
@@ -1310,9 +1317,9 @@ class TCPServer < TCPSocket
   # === See
   # * TCPServer#accept
   # * Socket#accept
-  def accept_nonblock(exception: true)
-    __accept_nonblock(exception)
-  end
+  #def accept_nonblock(exception: true)
+  #  __accept_nonblock(exception)
+  #end
 end
 
 class UNIXServer < UNIXSocket
@@ -1351,7 +1358,7 @@ class UNIXServer < UNIXSocket
   # === See
   # * UNIXServer#accept
   # * Socket#accept
-  def accept_nonblock(exception: true)
-    __accept_nonblock(exception)
-  end
+  #def accept_nonblock(exception: true)
+  #  __accept_nonblock(exception)
+  #end
 end if defined?(UNIXSocket)

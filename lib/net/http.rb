@@ -645,6 +645,10 @@ module Net   #:nodoc:
     # is required to use the proxy, and p_no_proxy hosts which do not
     # use the proxy.
     #
+    # In JRuby, this will default to the JSE proxy settings provided in the
+    # 'http.proxyHost' and 'http.proxyPort' Java system properties, if they
+    # are set, falling back on environment variables otherwise.
+    #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
 
@@ -1022,10 +1026,12 @@ module Net   #:nodoc:
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        # NOTE: session_cache_mode = has no effect on (current) JRuby-OpenSSL
+        # @ssl_context.session_cache_mode =
+        #   OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+        #   OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        # SSLSocket#session= does nothing with JRuby-OpenSSL
+        # @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
         D "starting SSL for #{conn_addr}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
@@ -1092,6 +1098,11 @@ module Net   #:nodoc:
     #
     # This class is obsolete.  You may pass these same parameters directly to
     # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
+    #
+    # In JRuby, this will default to the JSE proxy settings provided in the
+    # 'http.proxyHost' and 'http.proxyPort' Java system properties, if they
+    # are set, falling back on environment variables otherwise.
+    #
     def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
       return self unless p_addr
 
